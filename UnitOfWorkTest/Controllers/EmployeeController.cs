@@ -4,7 +4,7 @@ using System.Data;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using UnitOfWorkTest.Model;
 
 namespace UnitOfWorkTest.Controllers
 {
@@ -20,98 +20,88 @@ namespace UnitOfWorkTest.Controllers
 		}
 
 		[HttpGet]
-		public IEnumerable<Employee> Get()
+		public async Task<IEnumerable<Employee>> Get()
 		{
-			Console.WriteLine("Get");
-			return null;
+			return await _context.Employees.Include(e => e.Roles).ToListAsync();
 		}
 
 		[HttpPost]
-		public void Create()
+		public void Create([FromBody] EmployeeDTO request)
 		{
 			try
 			{
-				string id = Guid.NewGuid().ToString();
-				//string id = "97b526fd-d459-49fd-b7cf-db199caa654e";
-
-				Employee employee = new Employee
-				{
-				  Id = id,
-					Name = "Jack",
-					Department = "HR",
-					Email = "Jack@test.com"
-				};
-
-				if (_context.Employees.Find(id) != null)
-					throw new DbUpdateException();
-
+				Employee employee = new Employee(request.Name, request.Department, request.Email);
 				_context.Employees.Add(employee);
+				_context.SaveChanges();
 			}
 			catch (DbUpdateException)
 			{
-				Console.WriteLine("Caught");
 				throw;
 			}
-
-			Department department = new Department
-			{
-				Id = Guid.NewGuid().ToString(),
-				Name = "Human Resource",
-				Size = 100
-			};
-
-			_context.Departments.Add(department);
-			_context.SaveChanges();
-
-			Console.WriteLine("Post");
 		}
 
-		[HttpPost]
-		[Route("v2")]
-		public async Task CreateV2()
+		[HttpPut]
+		public async Task Update()
 		{
-			var executionStrategy = _context.Database.CreateExecutionStrategy();
-
-			await executionStrategy.ExecuteAsync(async () =>
+			try
 			{
-				using (var transaction = _context.Database.BeginTransaction(IsolationLevel.ReadCommitted))
-				{
-					try
-					{
-						Employee employee = new Employee
-						{
-							//Id = Guid.NewGuid().ToString(),
-							Id = new Guid("97b526fd-d459-49fd-b7cf-db199caa654e").ToString(),
-							Name = "Jack v2",
-							Department = "HR v2",
-							Email = "Jack@test.com"
-						};
+				Employee employee = await _context.Employees.Include(e => e.Roles).FirstOrDefaultAsync(e => e.Id == "5e2ed534-3a65-4f0a-93ce-4c4137814792");
+				employee.Roles.Add(new Role("CEO"));
 
-						_context.Employees.Add(employee);
-						_context.SaveChanges();
-					}
-					catch (DbUpdateException)
-					{
-						Console.WriteLine("Caught");
-						throw;
-					}
-
-					Department department = new Department
-					{
-						Id = Guid.NewGuid().ToString(),
-						Name = "Human Resource v2",
-						Size = 200
-					};
-
-					_context.Departments.Add(department);
-					_context.SaveChanges();
-
-					await transaction.CommitAsync();
-				}
-			});
-
-			Console.WriteLine("Post v2");
+				await _context.SaveChangesAsync();
+			}
+			catch (DbUpdateException)
+			{
+				throw;
+			}
 		}
+
+		//	[HttpPost]
+		//	[Route("v2")]
+		//	public async Task CreateV2()
+		//	{
+		//		var executionStrategy = _context.Database.CreateExecutionStrategy();
+
+		//		await executionStrategy.ExecuteAsync(async () =>
+		//		{
+		//			using (var transaction = _context.Database.BeginTransaction(IsolationLevel.ReadCommitted))
+		//			{
+		//				try
+		//				{
+		//					Employee employee = new Employee
+		//					{
+		//						//Id = Guid.NewGuid().ToString(),
+		//						Id = new Guid("97b526fd-d459-49fd-b7cf-db199caa654e").ToString(),
+		//						Name = "Jack v2",
+		//						Department = "HR v2",
+		//						Email = "Jack@test.com"
+		//					};
+
+		//					_context.Employees.Add(employee);
+		//					_context.SaveChanges();
+		//				}
+		//				catch (DbUpdateException)
+		//				{
+		//					Console.WriteLine("Caught");
+		//					throw;
+		//				}
+
+		//				Department department = new Department
+		//				{
+		//					Id = Guid.NewGuid().ToString(),
+		//					Name = "Human Resource v2",
+		//					Size = 200
+		//				};
+
+		//				_context.Departments.Add(department);
+		//				_context.SaveChanges();
+
+		//				await transaction.CommitAsync();
+		//			}
+		//		});
+
+		//		Console.WriteLine("Post v2");
+		//	}
 	}
 }
 

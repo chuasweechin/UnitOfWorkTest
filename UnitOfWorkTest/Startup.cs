@@ -19,9 +19,15 @@ namespace UnitOfWorkTest
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddControllers();
-			services.AddDbContext<AppDbContext>(options => {
-				options.UseNpgsql("Host=localhost;Port=5432;Database=employeeDB;Username=chuasweechin");
-			});
+
+			//services.AddDbContext<AppDbContext>(options => {
+			//	options.UseNpgsql("Host=localhost;Port=5432;Database=employeeDB;Username=chuasweechin");
+			//});
+
+			services.AddDbContextPool<AppDbContext>(options =>
+				options.UseSqlServer("Server=localhost,1433\\Catalog=Employee;Database=EmployeeDB;User=sa;Password=Winter2019")
+			);
+
 		}
 
 		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
